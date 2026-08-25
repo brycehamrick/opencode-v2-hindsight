@@ -8,7 +8,8 @@ export interface RetentionEngine {
   retainFact(
     fact: string,
     context?: string,
-    metadata?: Record<string, string>
+    metadata?: Record<string, string>,
+    tags?: string[]
   ): Promise<void>;
   retainTurns(sessionId: string, turns: Message[], state: SessionState): Promise<SessionState>;
   deleteByDocumentId(documentId: string): Promise<boolean>;
@@ -26,7 +27,8 @@ export function createRetentionEngine(
   async function retainFact(
     fact: string,
     context?: string,
-    metadata: Record<string, string> = {}
+    metadata: Record<string, string> = {},
+    tags?: string[]
   ): Promise<void> {
     const content = sanitizeForRetention(fact, {
       stripSecrets: config.stripSecrets,
@@ -50,7 +52,7 @@ export function createRetentionEngine(
       await client.retain(bankId, content, {
         context: context || config.retainContext,
         documentId,
-        tags: [...config.retainTags, "fact", "tool"],
+        tags: [...config.retainTags, "fact", "tool", ...(tags ?? [])],
         metadata: { ...config.retainMetadata, ...metadata },
         async: true,
       });

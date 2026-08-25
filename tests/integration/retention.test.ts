@@ -61,7 +61,7 @@ describe("RetentionEngine", () => {
 
   it("retains a fact via tool", async () => {
     const { engine, mockClient } = createEngine();
-    await engine.retainFact("use pnpm", "project setup", { tags: "convention" });
+    await engine.retainFact("use pnpm", "project setup", { source: "tool-test" }, ["convention"]);
 
     expect(mockClient.retain).toHaveBeenCalledTimes(1);
     const [bankId, content, options] = mockClient.retain.mock.calls[0];
@@ -69,6 +69,8 @@ describe("RetentionEngine", () => {
     expect(content).toContain("use pnpm");
     expect(options.tags).toContain("fact");
     expect(options.tags).toContain("tool");
+    expect(options.tags).toContain("convention");
+    expect(options.metadata).toEqual({ source: "tool-test" });
   });
 
   it("deduplicates in-flight fact retains", async () => {

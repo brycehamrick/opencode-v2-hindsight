@@ -10,6 +10,7 @@ import { createMemoryManager } from "./memory/manager.js";
 import { loadState, type StorageContext } from "./state.js";
 import { registerTools } from "./tools/index.js";
 import { registerHooks } from "./hooks/index.js";
+import { resolveWorkspaceDirectory } from "./workspace.js";
 
 export default Plugin.define({
   id: "hindsight",
@@ -18,10 +19,7 @@ export default Plugin.define({
     const config = loadConfig(rawOptions);
     const state = await loadState(ctx.storage as StorageContext | undefined);
 
-    const directory =
-      typeof (ctx as any).workspace === "string"
-        ? (ctx as any).workspace
-        : (ctx as any).workspace?.directory ?? process.cwd();
+    const directory = resolveWorkspaceDirectory(ctx);
 
     // Resolve the default agent name. OpenCode V2 exposes ctx.agent; fall back
     // to the configured agentName (or "opencode") when it is unavailable.

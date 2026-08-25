@@ -76,11 +76,15 @@ export function createHindsightClientWrapper(config: HindsightClientConfig): Hin
 export class HindsightClientWrapper {
   private readonly client: HindsightClient;
   private readonly logger: Logger;
+  private readonly baseUrl: string;
+  private readonly apiKey: string | null;
 
   constructor(config: HindsightClientConfig) {
+    this.baseUrl = config.baseUrl.replace(/\/$/, "");
+    this.apiKey = config.apiKey || null;
     this.client = new HindsightClient({
-      baseUrl: config.baseUrl,
-      apiKey: config.apiKey || undefined,
+      baseUrl: this.baseUrl,
+      apiKey: this.apiKey || undefined,
     });
     this.logger = config.logger;
   }
@@ -135,15 +139,27 @@ export class HindsightClientWrapper {
   }
 
   async deleteDocument(bankId: string, documentId: string): Promise<boolean> {
-    const deleteFn = (this.client as unknown as Record<string, (...args: unknown[]) => unknown>).deleteDocument;
-    if (typeof deleteFn !== "function") {
-      this.logger.warn("HindsightClient.deleteDocument is not available; forget operation skipped", {
-        bankId,
-        documentId,
-      });
-      return false;
+    const clientDelete = (this.client as any).deleteDocument;
+    if (typeof clientDelete === "function") {
+      await withRetry(() => clientDelete.call(this.client, bankId, documentId), this.logger);
+      return true;
     }
-    await withRetry(() => deleteFn.call(this.client, bankId, documentId) as Promise<unknown>, this.logger);
+
+    // Fallback to a direct REST call if the installed client version does not
+    // expose deleteDocument (e.g. older hindsight-client packages).
+    await withRetry(() => this.deleteDocumentViaFetch(bankId, documentId), this.logger);
     return true;
+  }
+
+  private async deleteDocumentViaFetch(bankId: string, documentId: string): Promise<void> {
+    const url = `${this.baseUrl}/v1/default/banks/${encodeURIComponent(bankId)}/documents/${encodeURIComponent(documentId)}`;
+    const headers: Record<string, string> = {};
+    if (this.apiKey) headers["Authorization"] = `Bearer ${this.apiKey}`;
+
+    const response = await fetch(url, { method: "DELETE", headers });
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      throw new Error(`deleteDocument failed: ${response.status} ${body}`);
+    }
   }
 }

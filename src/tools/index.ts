@@ -25,7 +25,8 @@ export async function registerTools(ctx: any, memory: MemoryManager): Promise<vo
         await memory.retainFact(
           input.content,
           input.context,
-          input.tags?.length ? { tags: input.tags.join(",") } : undefined,
+          undefined,
+          input.tags,
           input.agent
         );
         return { content: "Memory stored." };

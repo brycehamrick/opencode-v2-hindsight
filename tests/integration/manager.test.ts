@@ -114,12 +114,13 @@ describe("MemoryManager", () => {
     const manager = createManager();
     await manager.initialize();
 
-    await manager.retainFact("use pnpm", "project setup", { tags: "convention" });
+    await manager.retainFact("use pnpm", "project setup", { source: "tool" }, ["convention"]);
 
     expect(mockClient.retain).toHaveBeenCalled();
     const call = mockClient.retain.mock.calls[0];
     expect(call[0]).toBe("test-bank");
     expect(call[1]).toContain("use pnpm");
+    expect(call[2].tags).toContain("convention");
   });
 
   it("does not retain secrets", async () => {

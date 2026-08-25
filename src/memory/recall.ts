@@ -28,7 +28,8 @@ export function createRecallEngine(
     query: string,
     maxTokens: number,
     types?: string[],
-    tags?: string[]
+    tags?: string[],
+    tagsMatch?: HindsightConfig["recallTagsMatch"]
   ): Promise<RecallResult[]> {
     try {
       const response = await client.recall(bankId, query, {
@@ -36,7 +37,7 @@ export function createRecallEngine(
         maxTokens,
         types,
         tags,
-        tagsMatch: config.recallTagsMatch,
+        tagsMatch: tagsMatch ?? config.recallTagsMatch,
       });
       return (response.results || []).map((r) => ({
         text: r.text,
@@ -53,10 +54,14 @@ export function createRecallEngine(
   async function recallCoreMemories(): Promise<RecallResult[]> {
     if (!config.autoRecall) return [];
     const maxTokens = Math.min(config.coreMemoryMaxTokens, budgetToTokens(config.recallBudget));
+    // Hindsight's supported fact types are experience/opinion/world, so we
+    // identify core memories by the "core" tag rather than by type.
     const results = await callRecall(
       "core memories user preferences project conventions persistent decisions",
       maxTokens,
-      ["core"]
+      ["world"],
+      ["core"],
+      "any_strict"
     );
     return deduplicateByText(trimMemoriesToBudget(results, config.coreMemoryMaxTokens));
   }

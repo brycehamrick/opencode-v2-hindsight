@@ -28,6 +28,19 @@ describe("loadConfig", () => {
     expect(config.recallBudget).toBe("high");
   });
 
+  it("supports connection options in plugin options", () => {
+    const configWithUrl = loadConfig({ hindsightApiUrl: "http://localhost:8888" });
+    expect(configWithUrl.hindsightApiUrl).toBe("http://localhost:8888");
+    expect(configWithUrl.hindsightApiToken).toBeNull();
+
+    const configWithToken = loadConfig({
+      hindsightApiUrl: "https://api.hindsight.vectorize.io",
+      hindsightApiToken: "hz_secret",
+    });
+    expect(configWithToken.hindsightApiUrl).toBe("https://api.hindsight.vectorize.io");
+    expect(configWithToken.hindsightApiToken).toBe("hz_secret");
+  });
+
   it("applies environment variable overrides", () => {
     process.env.HINDSIGHT_BANK_ID = "env-bank";
     process.env.HINDSIGHT_AUTO_RECALL = "false";
@@ -42,7 +55,11 @@ describe("loadConfig", () => {
   });
 
   it("falls back invalid enum values", () => {
-    const config = loadConfig({ retainMode: "invalid", recallBudget: "huge", recallTagsMatch: "maybe" });
+    const config = loadConfig({
+      retainMode: "invalid",
+      recallBudget: "huge",
+      recallTagsMatch: "maybe",
+    });
     expect(config.retainMode).toBe("facts");
     expect(config.recallBudget).toBe("mid");
     expect(config.recallTagsMatch).toBe("any");

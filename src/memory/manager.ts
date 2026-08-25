@@ -16,7 +16,7 @@ export interface MemoryManager {
   recallByQuery(query: string, maxTokens?: number, agentName?: string): Promise<RecallResult[]>;
   reflect(query: string, context?: string, agentName?: string): Promise<string>;
   retainTurns(sessionId: string, turns: Message[], agentName?: string): Promise<void>;
-  retainFact(fact: string, context?: string, metadata?: Record<string, string>, agentName?: string): Promise<void>;
+  retainFact(fact: string, context?: string, metadata?: Record<string, string>, tags?: string[], agentName?: string): Promise<void>;
   forget(documentId?: string, query?: string, agentName?: string): Promise<boolean>;
   onCompaction(sessionId: string, turns?: Message[], agentName?: string): Promise<string | null>;
 }
@@ -210,10 +210,11 @@ export function createMemoryManager(deps: MemoryManagerDependencies): MemoryMana
     fact: string,
     context?: string,
     metadata?: Record<string, string>,
+    tags?: string[],
     agentName?: string
   ): Promise<void> {
     const engines = getEngines(agentName ?? defaultAgentName);
-    await engines.retention.retainFact(fact, context, metadata);
+    await engines.retention.retainFact(fact, context, metadata, tags);
   }
 
   async function forget(

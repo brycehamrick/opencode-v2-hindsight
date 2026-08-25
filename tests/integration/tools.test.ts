@@ -40,5 +40,10 @@ describe("registerTools", () => {
       expect(tool.options?.namespace).toBe("hindsight");
       expect(tool.options?.codemode).toBe(true);
     }
+
+    // Verify tags are passed as tags, not metadata.
+    const retainTool = added.find((t) => t.name === "hindsight_retain");
+    await retainTool.execute({ content: "test", tags: ["a", "b"] });
+    expect(memory.retainFact).toHaveBeenCalledWith("test", undefined, undefined, ["a", "b"], undefined);
   });
 });

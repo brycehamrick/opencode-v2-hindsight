@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@opencode-ai/plugin": "beta",
-    "@vectorize-io/hindsight-client": "^0.4.19"
+    "@vectorize-io/hindsight-client": "^0.5.2"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

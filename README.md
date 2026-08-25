@@ -103,21 +103,58 @@ Then add any options in `~/.config/opencode/opencode.jsonc` or a project `openco
 
 ### 3. Set your Hindsight credentials
 
-#### Hindsight Cloud (hosted)
-
-```bash
-export HINDSIGHT_API_TOKEN="hz_..."
-```
-
-The default endpoint is `https://api.hindsight.vectorize.io`.
+You can set the connection options in `opencode.jsonc` **or** via environment variables. The plugin config is usually cleaner.
 
 #### Self-hosted Hindsight
+
+In `opencode.jsonc`:
+
+```jsonc
+{
+  "plugins": [
+    {
+      "package": "/ABSOLUTE/PATH/TO/opencode-v2-hindsight/dist/index.js",
+      "options": {
+        "hindsightApiUrl": "http://localhost:8888"
+      }
+    }
+  ]
+}
+```
+
+Or via environment variable:
 
 ```bash
 export HINDSIGHT_API_URL="http://localhost:8888"
 ```
 
-No API token is required for unauthenticated self-hosted instances.
+No API token is required for unauthenticated self-hosted instances, so `hindsightApiToken` can be left unset (it defaults to `null`).
+
+#### Hindsight Cloud (hosted)
+
+In `opencode.jsonc`:
+
+```jsonc
+{
+  "plugins": [
+    {
+      "package": "/ABSOLUTE/PATH/TO/opencode-v2-hindsight/dist/index.js",
+      "options": {
+        "hindsightApiUrl": "https://api.hindsight.vectorize.io",
+        "hindsightApiToken": "hz_..."
+      }
+    }
+  ]
+}
+```
+
+Or via environment variables:
+
+```bash
+export HINDSIGHT_API_TOKEN="hz_..."
+# Optional: override the endpoint
+export HINDSIGHT_API_URL="https://api.hindsight.vectorize.io"
+```
 
 ### 4. Restart OpenCode
 
