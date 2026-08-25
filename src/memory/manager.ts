@@ -19,6 +19,7 @@ export interface MemoryManager {
   retainFact(fact: string, context?: string, metadata?: Record<string, string>, tags?: string[], agentName?: string): Promise<void>;
   forget(documentId?: string, query?: string, agentName?: string): Promise<boolean>;
   onCompaction(sessionId: string, turns?: Message[], agentName?: string): Promise<string | null>;
+  getDiagnostics(agentName?: string): { directory: string; bankId: string; agent: string };
 }
 
 export interface MemoryManagerDependencies {
@@ -262,6 +263,12 @@ export function createMemoryManager(deps: MemoryManagerDependencies): MemoryMana
     return context;
   }
 
+  function getDiagnostics(agentName?: string): { directory: string; bankId: string; agent: string } {
+    const name = agentName ?? defaultAgentName;
+    const engines = getEngines(name);
+    return { directory, bankId: engines.bankId, agent: name };
+  }
+
   return {
     initialize,
     shutdown,
@@ -273,5 +280,6 @@ export function createMemoryManager(deps: MemoryManagerDependencies): MemoryMana
     retainFact,
     forget,
     onCompaction,
+    getDiagnostics,
   };
 }

@@ -96,5 +96,24 @@ export async function registerTools(ctx: any, memory: MemoryManager): Promise<vo
         return { content: ok ? "Memory removed." : "Could not remove memory (unsupported or not found)." };
       },
     });
+
+    draft.add({
+      name: "hindsight_status",
+      description: "Show Hindsight plugin diagnostics: resolved workspace directory and current memory bank.",
+      input: {
+        type: "object",
+        properties: {
+          agent: { type: "string", description: "Optional agent scope. Defaults to the active agent." },
+        },
+        additionalProperties: false,
+      },
+      options: { namespace: NAMESPACE, codemode: true },
+      execute: async (input: { agent?: string }) => {
+        const diag = memory.getDiagnostics(input.agent);
+        return {
+          content: `Hindsight diagnostics:\n- Workspace directory: ${diag.directory}\n- Memory bank: ${diag.bankId}\n- Agent: ${diag.agent}`,
+        };
+      },
+    });
   });
 }

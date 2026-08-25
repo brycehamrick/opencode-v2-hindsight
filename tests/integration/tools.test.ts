@@ -35,7 +35,7 @@ describe("registerTools", () => {
     await registerTools(ctx as any, memory);
 
     const names = added.map((t) => t.name).sort();
-    expect(names).toEqual(["hindsight_forget", "hindsight_recall", "hindsight_reflect", "hindsight_retain"]);
+    expect(names).toEqual(["hindsight_forget", "hindsight_recall", "hindsight_reflect", "hindsight_retain", "hindsight_status"]);
     for (const tool of added) {
       expect(tool.options?.namespace).toBe("hindsight");
       expect(tool.options?.codemode).toBe(true);

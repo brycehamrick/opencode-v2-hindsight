@@ -66,36 +66,50 @@ function findProjectRoot(startDir: string): string | null {
   return findGitRoot(startDir);
 }
 
+function pickString(...values: unknown[]): string | null {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+  return null;
+}
+
 /**
  * Resolve the most accurate workspace directory available.
  *
- * OpenCode V2 exposes `ctx.worktree` (git root / project root) and
- * `ctx.directory` (cwd). We prefer `ctx.worktree` for stable project-wide
- * bank IDs, then fall back to other known fields and heuristics.
- *
- * Order of preference:
- * 1. ctx.worktree
- * 2. ctx.project?.path
- * 3. ctx.directory
- * 4. ctx.workspace (legacy / undocumented)
- * 5. process.cwd()
- * 6. The directory containing this plugin file (useful for local plugin installs)
- * 7. Fallback to ctx.worktree or process.cwd()
+ * OpenCode V2 exposes the project directory through several possible fields.
+ * We try the known ones in order of preference and fall back to git/project
+ * markers and process.cwd().
  */
 export function resolveWorkspaceDirectory(ctx: any): string {
   const candidates: string[] = [];
 
-  // OpenCode V2 primary project fields.
-  if (ctx?.worktree) candidates.push(ctx.worktree);
-  if (ctx?.project?.path) candidates.push(ctx.project.path);
-  if (ctx?.directory) candidates.push(ctx.directory);
+  // OpenCode V2 documented fields.
+  const worktree = pickString(ctx?.worktree);
+  if (worktree) candidates.push(worktree);
 
-  // Legacy / undocumented fallback.
-  const ctxWorkspace =
+  const directory = pickString(ctx?.directory);
+  if (directory) candidates.push(directory);
+
+  const projectPath = pickString(ctx?.project?.path, ctx?.project?.directory, ctx?.project?.root);
+  if (projectPath) candidates.push(projectPath);
+
+  // Legacy / undocumented fallbacks.
+  const workspacePath =
     typeof ctx?.workspace === "string"
       ? ctx.workspace
-      : ctx?.workspace?.directory;
-  if (ctxWorkspace) candidates.push(ctxWorkspace);
+      : pickString(ctx?.workspace?.directory, ctx?.workspace?.path, ctx?.workspace?.root, ctx?.workspace?.dir);
+  if (workspacePath) candidates.push(workspacePath);
+
+  // Nested client/project fields (some OpenCode builds pass these).
+  const clientProjectPath = pickString(
+    ctx?.client?.project?.path,
+    ctx?.client?.project?.directory,
+    ctx?.client?.worktree,
+    ctx?.client?.directory
+  );
+  if (clientProjectPath) candidates.push(clientProjectPath);
 
   if (typeof process !== "undefined" && process.cwd) {
     candidates.push(process.cwd());
@@ -114,5 +128,5 @@ export function resolveWorkspaceDirectory(ctx: any): string {
     if (root) return root;
   }
 
-  return ctx?.worktree || ctx?.directory || ctxWorkspace || process.cwd();
+  return worktree || directory || projectPath || workspacePath || process.cwd();
 }
