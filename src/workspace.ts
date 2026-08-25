@@ -1,6 +1,6 @@
 import { dirname, resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { statSync } from "node:fs";
+import { statSync, readdirSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
 const PROJECT_MARKERS = [
@@ -8,6 +8,14 @@ const PROJECT_MARKERS = [
   ".opencode/opencode.jsonc",
   "opencode.jsonc",
   "opencode.json",
+];
+
+// OpenCode's plugin setup context does not always expose the current project
+// directory (especially for npm-loaded plugins). As a last resort, search for
+// an OpenCode config file that references this plugin package.
+const PLUGIN_PACKAGE_NAMES = [
+  "@brycehamrick/opencode-v2-hindsight",
+  "opencode-v2-hindsight",
 ];
 
 function exists(path: string): boolean {
@@ -66,6 +74,50 @@ function findProjectRoot(startDir: string): string | null {
   return findGitRoot(startDir);
 }
 
+function referencesPlugin(text: string): boolean {
+  const lower = text.toLowerCase();
+  return PLUGIN_PACKAGE_NAMES.some((name) => lower.includes(name.toLowerCase()));
+}
+
+function findConfigReferencingPlugin(startDir: string, maxDepth = 2): string | null {
+  if (!startDir || !exists(startDir)) return null;
+
+  const queue: { dir: string; depth: number }[] = [{ dir: resolve(startDir), depth: 0 }];
+  const seen = new Set<string>();
+
+  while (queue.length) {
+    const { dir, depth } = queue.shift()!;
+    if (seen.has(dir)) continue;
+    seen.add(dir);
+
+    for (const marker of PROJECT_MARKERS) {
+      const configPath = join(dir, marker);
+      if (exists(configPath)) {
+        try {
+          const raw = readFileSync(configPath, "utf-8");
+          if (referencesPlugin(raw)) return dir;
+        } catch {
+          // Ignore unreadable files.
+        }
+      }
+    }
+
+    if (depth < maxDepth) {
+      try {
+        for (const entry of readdirSync(dir, { withFileTypes: true })) {
+          if (entry.isDirectory() && !entry.name.startsWith(".")) {
+            queue.push({ dir: join(dir, entry.name), depth: depth + 1 });
+          }
+        }
+      } catch {
+        // Ignore unreadable directories.
+      }
+    }
+  }
+
+  return null;
+}
+
 function pickString(...values: unknown[]): string | null {
   for (const value of values) {
     if (typeof value === "string" && value.trim()) {
@@ -81,6 +133,10 @@ function pickString(...values: unknown[]): string | null {
  * OpenCode V2 exposes the project directory through several possible fields.
  * We try the known ones in order of preference and fall back to git/project
  * markers and process.cwd().
+ *
+ * When OpenCode loads the plugin from npm, the setup context often lacks the
+ * current project directory, so we also search nearby directories for an
+ * OpenCode config file that references this plugin package.
  */
 export function resolveWorkspaceDirectory(ctx: any): string {
   const candidates: string[] = [];
@@ -126,6 +182,12 @@ export function resolveWorkspaceDirectory(ctx: any): string {
   for (const candidate of candidates) {
     const root = findProjectRoot(candidate);
     if (root) return root;
+  }
+
+  // Last resort: search for an OpenCode config that references this plugin.
+  for (const candidate of candidates) {
+    const found = findConfigReferencingPlugin(candidate, 2);
+    if (found) return found;
   }
 
   return worktree || directory || projectPath || workspacePath || process.cwd();
