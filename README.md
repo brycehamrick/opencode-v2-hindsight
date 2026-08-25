@@ -16,21 +16,15 @@ A best-in-class, token-efficient long-term memory plugin for [OpenCode V2](https
 
 ## Installation
 
-> **Note:** This package is not yet published to npm. OpenCode resolves the `"package"` field in `opencode.jsonc` against npm by default, so referencing `"@brycehamrick/opencode-v2-hindsight"` will not auto-install from GitHub. Until it is published to npm, use one of the local-path methods below.
->
-> To install from GitHub manually you can run `npm install github:brycehamrick/opencode-v2-hindsight` in a Node project, but OpenCode will still need a local path or a configured registry to load it.
-
-### 1. Build the plugin
+Install the plugin from npm:
 
 ```bash
-cd ~/src-local/opencode-v2-hindsight
-npm install
-npm run build
+npm install -g @brycehamrick/opencode-v2-hindsight
 ```
 
-This produces `dist/index.js`, which is the entry point OpenCode loads.
+OpenCode V2 resolves the `"package"` field in `opencode.jsonc` against npm by default, so you can reference the package by name.
 
-### 2. Add to your OpenCode V2 config
+### 1. Add to your OpenCode V2 config
 
 OpenCode V2 reads config from the global config location (commonly `~/.config/opencode/opencode.jsonc`) and from project configs such as `.opencode/opencode.jsonc` or `opencode.jsonc` in the project directory. Project configs override global ones. The exact global path can vary by OS/OpenCode version — check `opencode --help` or the OpenCode docs if the file does not exist.
 
@@ -43,7 +37,7 @@ Edit your global OpenCode config (commonly `~/.config/opencode/opencode.jsonc`):
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
     {
-      "package": "/ABSOLUTE/PATH/TO/opencode-v2-hindsight/dist/index.js",
+      "package": "@brycehamrick/opencode-v2-hindsight",
       "options": {
         "dynamicBankId": true,
         "dynamicBankGranularity": ["agent", "gitProject"]
@@ -62,7 +56,7 @@ Create `.opencode/opencode.jsonc` in your project root:
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
     {
-      "package": "/ABSOLUTE/PATH/TO/opencode-v2-hindsight/dist/index.js",
+      "package": "@brycehamrick/opencode-v2-hindsight",
       "options": {
         "bankId": "my-project",
         "dynamicBankId": true,
@@ -73,35 +67,9 @@ Create `.opencode/opencode.jsonc` in your project root:
 }
 ```
 
-#### Option C: Auto-load from `.opencode/plugins/`
-
-OpenCode V2 automatically loads plugins placed in `.opencode/plugins/`. You can symlink the built plugin there:
-
-```bash
-mkdir -p ~/.opencode/plugins
-ln -s /ABSOLUTE/PATH/TO/opencode-v2-hindsight/dist/index.js ~/.opencode/plugins/hindsight.js
-```
-
-Then add any options in `~/.config/opencode/opencode.jsonc` or a project `opencode.jsonc`:
-
-```jsonc
-{
-  "$schema": "https://opencode.ai/config.json",
-  "plugins": [
-    {
-      "package": "hindsight",
-      "options": {
-        "dynamicBankId": true,
-        "dynamicBankGranularity": ["agent", "gitProject"]
-      }
-    }
-  ]
-}
-```
-
 > Plugin options from a project `opencode.jsonc` merge over the global config. Later entries in the `plugins` array override earlier ones.
 
-### 3. Set your Hindsight credentials
+### 2. Set your Hindsight credentials
 
 You can set the connection options in `opencode.jsonc` **or** via environment variables. The plugin config is usually cleaner.
 
@@ -113,7 +81,7 @@ In `opencode.jsonc`:
 {
   "plugins": [
     {
-      "package": "/ABSOLUTE/PATH/TO/opencode-v2-hindsight/dist/index.js",
+      "package": "@brycehamrick/opencode-v2-hindsight",
       "options": {
         "hindsightApiUrl": "http://localhost:8888"
       }
@@ -138,7 +106,7 @@ In `opencode.jsonc`:
 {
   "plugins": [
     {
-      "package": "/ABSOLUTE/PATH/TO/opencode-v2-hindsight/dist/index.js",
+      "package": "@brycehamrick/opencode-v2-hindsight",
       "options": {
         "hindsightApiUrl": "https://api.hindsight.vectorize.io",
         "hindsightApiToken": "hz_..."
@@ -156,9 +124,9 @@ export HINDSIGHT_API_TOKEN="hz_..."
 export HINDSIGHT_API_URL="https://api.hindsight.vectorize.io"
 ```
 
-### 4. Restart OpenCode
+### 3. Restart OpenCode
 
-OpenCode loads plugins at startup. Restart it after changing `opencode.jsonc` or rebuilding the plugin.
+OpenCode loads plugins at startup. Restart it after changing `opencode.jsonc`.
 
 ## Global config + per-project overrides
 
@@ -174,7 +142,7 @@ Example global config:
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
     {
-      "package": "/ABSOLUTE/PATH/TO/opencode-v2-hindsight/dist/index.js",
+      "package": "@brycehamrick/opencode-v2-hindsight",
       "options": {
         "dynamicBankId": true,
         "dynamicBankGranularity": ["agent", "gitProject"],
@@ -192,7 +160,7 @@ Example per-project override:
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
     {
-      "package": "/ABSOLUTE/PATH/TO/opencode-v2-hindsight/dist/index.js",
+      "package": "@brycehamrick/opencode-v2-hindsight",
       "options": {
         "bankId": "legacy-monolith",
         "dynamicBankId": false,
@@ -215,7 +183,7 @@ OpenCode V2 supports multiple agents. To give each agent its own memory bank, en
 {
   "plugins": [
     {
-      "package": "/ABSOLUTE/PATH/TO/opencode-v2-hindsight/dist/index.js",
+      "package": "@brycehamrick/opencode-v2-hindsight",
       "options": {
         "dynamicBankId": true,
         "dynamicBankGranularity": ["agent", "project"]
@@ -289,11 +257,17 @@ Configuration priority (later wins):
 
 ## Development
 
+To build and test from source:
+
 ```bash
+git clone https://github.com/brycehamrick/opencode-v2-hindsight.git
+cd opencode-v2-hindsight
 npm install
 npm test
 npm run build
 ```
+
+To use a local build in OpenCode, point the `"package"` field to the absolute path of `dist/index.js`.
 
 ## Example configs
 
@@ -301,7 +275,7 @@ See `examples/opencode.jsonc` and `examples/global-opencode.jsonc`.
 
 ## Status
 
-This plugin targets OpenCode V2 and is **not** compatible with OpenCode V1. It is ready for local integration testing; E2E tests against a live Hindsight instance are still pending.
+This plugin targets OpenCode V2 and is **not** compatible with OpenCode V1.
 
 ## License
 

@@ -11,14 +11,36 @@
       "import": "./dist/index.js"
     }
   },
+  "files": [
+    "dist",
+    "examples",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsc --watch",
     "clean": "rm -rf dist",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run lint && npm test && npm run build"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brycehamrick/opencode-v2-hindsight.git"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-v2",
+    "hindsight",
+    "memory",
+    "long-term-memory",
+    "plugin",
+    "ai"
+  ],
+  "author": "Bryce Hamrick",
+  "license": "MIT",
   "dependencies": {
     "@opencode-ai/plugin": "beta",
     "@vectorize-io/hindsight-client": "^0.5.2"
