@@ -1,4 +1,4 @@
-# @vectorize-io/opencode-v2-hindsight
+# @brycehamrick/opencode-v2-hindsight
 
 A best-in-class, token-efficient long-term memory plugin for [OpenCode V2](https://opencode.ai).
 
@@ -16,24 +16,94 @@ A best-in-class, token-efficient long-term memory plugin for [OpenCode V2](https
 
 ## Installation
 
-Add to your OpenCode V2 config (`opencode.jsonc`):
+> **Note:** This package is not yet published to npm. OpenCode resolves the `"package"` field in `opencode.jsonc` against npm by default, so referencing `"@brycehamrick/opencode-v2-hindsight"` will not auto-install from GitHub. Until it is published to npm, use one of the local-path methods below.
+>
+> To install from GitHub manually you can run `npm install github:brycehamrick/opencode-v2-hindsight` in a Node project, but OpenCode will still need a local path or a configured registry to load it.
+
+### 1. Build the plugin
+
+```bash
+cd ~/src-local/opencode-v2-hindsight
+npm install
+npm run build
+```
+
+This produces `dist/index.js`, which is the entry point OpenCode loads.
+
+### 2. Add to your OpenCode V2 config
+
+OpenCode V2 reads config from the global config location (commonly `~/.config/opencode/opencode.jsonc`) and from project configs such as `.opencode/opencode.jsonc` or `opencode.jsonc` in the project directory. Project configs override global ones. The exact global path can vary by OS/OpenCode version — check `opencode --help` or the OpenCode docs if the file does not exist.
+
+#### Option A: Global config
+
+Edit your global OpenCode config (commonly `~/.config/opencode/opencode.jsonc`):
 
 ```jsonc
 {
+  "$schema": "https://opencode.ai/config.json",
   "plugins": [
     {
-      "package": "@vectorize-io/opencode-v2-hindsight",
+      "package": "/ABSOLUTE/PATH/TO/opencode-v2-hindsight/dist/index.js",
       "options": {
-        "bankId": "my-project"
+        "dynamicBankId": true,
+        "dynamicBankGranularity": ["agent", "gitProject"]
       }
     }
   ]
 }
 ```
 
-## Hindsight Cloud (hosted)
+#### Option B: Per-project config
 
-Set your API token:
+Create `.opencode/opencode.jsonc` in your project root:
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": [
+    {
+      "package": "/ABSOLUTE/PATH/TO/opencode-v2-hindsight/dist/index.js",
+      "options": {
+        "bankId": "my-project",
+        "dynamicBankId": true,
+        "dynamicBankGranularity": ["agent", "gitProject"]
+      }
+    }
+  ]
+}
+```
+
+#### Option C: Auto-load from `.opencode/plugins/`
+
+OpenCode V2 automatically loads plugins placed in `.opencode/plugins/`. You can symlink the built plugin there:
+
+```bash
+mkdir -p ~/.opencode/plugins
+ln -s /ABSOLUTE/PATH/TO/opencode-v2-hindsight/dist/index.js ~/.opencode/plugins/hindsight.js
+```
+
+Then add any options in `~/.config/opencode/opencode.jsonc` or a project `opencode.jsonc`:
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": [
+    {
+      "package": "hindsight",
+      "options": {
+        "dynamicBankId": true,
+        "dynamicBankGranularity": ["agent", "gitProject"]
+      }
+    }
+  ]
+}
+```
+
+> Plugin options from a project `opencode.jsonc` merge over the global config. Later entries in the `plugins` array override earlier ones.
+
+### 3. Set your Hindsight credentials
+
+#### Hindsight Cloud (hosted)
 
 ```bash
 export HINDSIGHT_API_TOKEN="hz_..."
@@ -41,23 +111,64 @@ export HINDSIGHT_API_TOKEN="hz_..."
 
 The default endpoint is `https://api.hindsight.vectorize.io`.
 
-## Self-hosted Hindsight
+#### Self-hosted Hindsight
 
-Point the plugin at your local server and omit the API token:
+```bash
+export HINDSIGHT_API_URL="http://localhost:8888"
+```
+
+No API token is required for unauthenticated self-hosted instances.
+
+### 4. Restart OpenCode
+
+OpenCode loads plugins at startup. Restart it after changing `opencode.jsonc` or rebuilding the plugin.
+
+## Global config + per-project overrides
+
+The recommended setup is:
+
+1. **Globally** enable the plugin with base options in `~/.config/opencode/opencode.jsonc`.
+2. **Per project**, create `.opencode/opencode.jsonc` to override only what needs to differ.
+
+Example global config:
 
 ```jsonc
 {
+  "$schema": "https://opencode.ai/config.json",
   "plugins": [
     {
-      "package": "@vectorize-io/opencode-v2-hindsight",
+      "package": "/ABSOLUTE/PATH/TO/opencode-v2-hindsight/dist/index.js",
       "options": {
-        "hindsightApiUrl": "http://localhost:8888",
-        "hindsightApiToken": null
+        "dynamicBankId": true,
+        "dynamicBankGranularity": ["agent", "gitProject"],
+        "retainMode": "facts"
       }
     }
   ]
 }
 ```
+
+Example per-project override:
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": [
+    {
+      "package": "/ABSOLUTE/PATH/TO/opencode-v2-hindsight/dist/index.js",
+      "options": {
+        "bankId": "legacy-monolith",
+        "dynamicBankId": false,
+        "retainMode": "transcript"
+      }
+    }
+  ]
+}
+```
+
+The project config replaces the global plugin options for that workspace. If you want both global and project options merged, list the plugin once in the global config and again in the project config with the overrides.
+
+> The plugin also reads `~/.hindsight/opencode.json` for persistent defaults (see Configuration priority below). This is useful for credentials and settings you don't want to commit to a repo.
 
 ## Per-agent scoping
 
@@ -67,7 +178,7 @@ OpenCode V2 supports multiple agents. To give each agent its own memory bank, en
 {
   "plugins": [
     {
-      "package": "@vectorize-io/opencode-v2-hindsight",
+      "package": "/ABSOLUTE/PATH/TO/opencode-v2-hindsight/dist/index.js",
       "options": {
         "dynamicBankId": true,
         "dynamicBankGranularity": ["agent", "project"]
@@ -126,6 +237,12 @@ All explicit tools accept an optional `agent` parameter to target a specific age
 
 Environment variables override plugin options: `HINDSIGHT_API_URL`, `HINDSIGHT_API_TOKEN`, `HINDSIGHT_BANK_ID`, `HINDSIGHT_AGENT_NAME`, `HINDSIGHT_AUTO_RECALL`, `HINDSIGHT_RETAIN_MODE`, etc.
 
+Configuration priority (later wins):
+1. Built-in defaults
+2. `~/.hindsight/opencode.json`
+3. Plugin options from `opencode.jsonc`
+4. Environment variables
+
 ## Tools
 
 - `hindsight_retain(content, context?, tags?, agent?)` — store a fact or decision.
@@ -140,6 +257,10 @@ npm install
 npm test
 npm run build
 ```
+
+## Example configs
+
+See `examples/opencode.jsonc` and `examples/global-opencode.jsonc`.
 
 ## Status
 

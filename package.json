@@ -1,5 +1,5 @@
 {
-  "name": "@vectorize-io/opencode-v2-hindsight",
+  "name": "@brycehamrick/opencode-v2-hindsight",
   "version": "0.1.0",
   "description": "Token-efficient long-term memory plugin for OpenCode V2",
   "type": "module",
