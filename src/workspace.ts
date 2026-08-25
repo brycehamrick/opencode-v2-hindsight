@@ -69,15 +69,28 @@ function findProjectRoot(startDir: string): string | null {
 /**
  * Resolve the most accurate workspace directory available.
  *
+ * OpenCode V2 exposes `ctx.worktree` (git root / project root) and
+ * `ctx.directory` (cwd). We prefer `ctx.worktree` for stable project-wide
+ * bank IDs, then fall back to other known fields and heuristics.
+ *
  * Order of preference:
- * 1. ctx.workspace (string or .directory)
- * 2. process.cwd()
- * 3. The directory containing this plugin file (useful for local plugin installs)
- * 4. Fallback to ctx.workspace or process.cwd()
+ * 1. ctx.worktree
+ * 2. ctx.project?.path
+ * 3. ctx.directory
+ * 4. ctx.workspace (legacy / undocumented)
+ * 5. process.cwd()
+ * 6. The directory containing this plugin file (useful for local plugin installs)
+ * 7. Fallback to ctx.worktree or process.cwd()
  */
 export function resolveWorkspaceDirectory(ctx: any): string {
   const candidates: string[] = [];
 
+  // OpenCode V2 primary project fields.
+  if (ctx?.worktree) candidates.push(ctx.worktree);
+  if (ctx?.project?.path) candidates.push(ctx.project.path);
+  if (ctx?.directory) candidates.push(ctx.directory);
+
+  // Legacy / undocumented fallback.
   const ctxWorkspace =
     typeof ctx?.workspace === "string"
       ? ctx.workspace
@@ -101,5 +114,5 @@ export function resolveWorkspaceDirectory(ctx: any): string {
     if (root) return root;
   }
 
-  return ctxWorkspace || process.cwd();
+  return ctx?.worktree || ctx?.directory || ctxWorkspace || process.cwd();
 }
